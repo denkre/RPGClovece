@@ -1,4 +1,5 @@
 from figurky import Figurka
+from queue import Queue
 
 from random import randint, choice
 
@@ -9,16 +10,34 @@ class HerniPole:
 
     def __init__(self):
         self.kostka = Kostka()
-        self.hraci = ...
+        self.hraci = []
         self.pole = []
         self.start_policka = {}
         self.fin_policka = {}
 
+        self.gen_pole()
+        self.add_hrace()
+
+    def add_hrace(self):
+        for color in HerniPole.COLORS:
+            self.hraci.append(Hrac(color))
+
+    def print_hrace(self):
+        print("HRACI")
+        for hrac in self.hraci:
+            print(hrac.color)
+            print("Figurky:")
+            for figurka in hrac.act_figurky:
+                print(f" - {figurka}")
+        print()
+
     def gen_pole(self):
-        for color in self.COLORS:
-            start_policko = Policko(is_special=True, color=color)
+        for hrac in self.hraci:
+            start_policko = Policko(is_special=True, color=hrac.color)
+            hrac.start_domecek.set_start_policko(start_policko)
+            hrac.set_start_index(len(self.pole))
             self.pole.append(start_policko)
-            self.start_policka[color] = start_policko
+            self.start_policka[hrac] = start_policko
 
             for i in range(self.SIZE//4-2):
                 rand = randint(1, 100)
@@ -32,9 +51,42 @@ class HerniPole:
                     policko = Policko()
                 self.pole.append(policko)
 
-            fin_policko = Policko(is_special=True, color=color)
-            self.fin_policka[color] = fin_policko
+            fin_policko = Policko(is_special=True, color=hrac.color)
+            hrac.fin_domecek.set_fin_policko(fin_policko)
+            hrac.set_fin_index(len(self.pole))
+            self.fin_policka[hrac.color] = fin_policko
             self.pole.append(fin_policko)
+
+    def print_pole(self):
+        print("HERNI POLE")
+        for policko in self.pole:
+            print(policko)
+        print()
+
+    def game(self):
+        while True:
+            self.play_round()
+
+    def play_round(self):
+        for hrac in self.hraci:
+            hrac.sort_figurky()
+
+            # tah figurkou
+            act_figurka = hrac.act_figurky.dequeue()
+            num = self.kostka.hod()
+            if act_figurka.index:
+                next_index = act_figurka.index + num
+                fin_distance = act_figurka.get_fin_distance(next_index)
+                if  fin_distance > 0:
+                    # bez dopredu a nastav policku figurku
+                    ...
+                elif fin_distance == 0:
+                    # bez dopredu a nastav policku figurku
+                    ...
+                else:
+                    # prepocitej a pripadne bez do domecku
+                    ...
+            hrac.figurky.enqueue(act_figurka)
 
 
 class Policko:
@@ -104,9 +156,14 @@ class KillPolicko(Policko):
 
 
 class FinDomecek:
-    def __init__(self, color):
-        self.color = color
-        self.pole = [Policko() for i in range(4)]
+    def __init__(self, hrac):
+        self.hrac = hrac
+        self.color = hrac.color
+        self.pole = [Policko() for _ in range(4)]
+        self.fin_policko = None
+
+    def set_fin_policko(self, policko):
+        self.fin_policko = policko
 
     def place_figurka(self, figurka, index):
         policko = self.pole[index]
@@ -115,7 +172,7 @@ class FinDomecek:
         else:
             raise Exception("Pole je již obsazeno!")
 
-    def can_place_figurka(self, figurka, index):
+    def can_place_figurka(self, index):
         policko = self.pole[index]
         if policko.figurky:
             return False
@@ -127,9 +184,14 @@ class FinDomecek:
 
 
 class StartDomecek:
-    def __init__(self, color):
-        self.color = color
+    def __init__(self, hrac):
+        self.hrac = hrac
+        self.color = hrac.color
         self.pole = []
+        self.start_policko = None
+
+    def set_start_policko(self, policko):
+        self.start_policko = policko
 
     def add_figurka(self, figurka):
         self.pole.append(figurka)
@@ -147,12 +209,28 @@ class Kostka:
 
 
 class Hrac:
-    def __init__(self):
-        self.figurky = ...
+    def __init__(self, color):
+        self.color = color
+        self.figurky = [Figurka(self.color) for _ in range(4)]
+        self.act_figurky = Queue(4, items=self.figurky)
+        self.start_domecek = StartDomecek(self)
+        self.fin_domecek = FinDomecek(self)
 
-    def sort_figurky(self):
-        # řadící algoritmus figurek
+    def add_figurky_to_start_domecek(self):
         ...
 
+    def sort_figurky(self):
+        # radici algoritmus figurek
+        self.act_figurky.sort()
+
+    def set_start_index(self, index):
+        self.start_index = index
+
+    def set_fin_index(self, index):
+        self.fin_index = index
 
 
+def run():
+    board = HerniPole()
+    board.print_hrace()
+    # board.print_pole()

@@ -6,3 +6,9 @@ class Figurka:
 
     def die(self):
         self.hp = 0
+
+    def set_index(self, index):
+        self.index = index
+
+    def get_fin_distance(self, index=self.index):
+        ...
